@@ -1,6 +1,6 @@
 import React from "react";
 import { LogOut } from "lucide-react";
-import musicLogo from './assets/music_logo.svg';
+import musicLogo from '../../../src/assets/Music_logo.svg';
 
 export default function HomePage() {
   const dummyMusic = [
