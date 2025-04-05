@@ -4,13 +4,13 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 
 # Initialize Flask App
 group15_music = Flask(__name__)
-group15_music.secret_key = "your_secret_key"
+group15_music.secret_key = "your_secret_key"  # Make sure to replace with a secure key
 
 # AWS Configuration
 AWS_REGION = "us-east-1"
 USER_TABLE = "login"                   # From CreateLoginTable_Task1_1 (optional)
-S3_BUCKET = "musicsanad"              # Updated to your actual bucket name
-MUSIC_CATALOG_TABLE = "music"         # From MusicCreateTable_Task1_2
+S3_BUCKET = "musicsanad"               # Replace with your actual bucket name
+MUSIC_CATALOG_TABLE = "music"          # From MusicCreateTable_Task1_2
 SUBSCRIPTIONS_TABLE = "sMusicSubscriptions"  # Still used for user subscriptions
 
 # Initialize AWS Clients
@@ -22,13 +22,14 @@ music_catalog_table = dynamodb.Table(MUSIC_CATALOG_TABLE)
 music_table = dynamodb.Table(SUBSCRIPTIONS_TABLE)
 
 
-###  User Authentication  ###
+### User Authentication ###
 @group15_music.route('/')
 def home():
     if 'user_name' not in session:
         return redirect(url_for('login'))
 
     return render_template("main.html", user_name=session['user_name'])
+
 
 @group15_music.route('/login', methods=['GET', 'POST'])
 def login():
@@ -49,12 +50,14 @@ def login():
 
     return render_template("login.html")
 
+
 @group15_music.route('/logout')
 def logout():
     session.pop('user_name', None)
     return redirect(url_for('login'))
 
-###  Subscription Area  ###
+
+### Subscription Area ###
 @group15_music.route('/subscriptions')
 def get_subscriptions():
     if 'user_name' not in session:
@@ -80,6 +83,7 @@ def get_subscriptions():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 def get_artist_image_url(artist_name):
     try:
         s3_file_key = f"artists/{artist_name}.jpg"
@@ -92,7 +96,8 @@ def get_artist_image_url(artist_name):
     except Exception as e:
         return "https://your-bucket.s3.amazonaws.com/default-placeholder.jpg"  # Default image
 
-###  Remove Subscription  ###
+
+### Remove Subscription ###
 @group15_music.route('/remove', methods=['POST'])
 def remove_music():
     if 'user_name' not in session:
@@ -112,7 +117,8 @@ def remove_music():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-###  Query Music  ###
+
+### Query Music ###
 @group15_music.route('/query', methods=['POST'])
 def query_music():
     data = request.get_json()
@@ -166,7 +172,8 @@ def query_music():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-###  Subscribe to Music  ###
+
+### Subscribe to Music ###
 @group15_music.route('/subscribe', methods=['POST'])
 def subscribe_music():
     if 'user_name' not in session:
@@ -195,6 +202,7 @@ def subscribe_music():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-###  Run the Flask App  ###
+
+### Run the Flask App ###
 if __name__ == '__main__':
     group15_music.run(debug=True)
