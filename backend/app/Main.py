@@ -1,5 +1,6 @@
 import boto3
 import json
+import requests  # Add this import to send HTTP requests
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 
 # Initialize Flask App
@@ -12,6 +13,9 @@ USER_TABLE = "login"                   # From CreateLoginTable_Task1_1 (optional
 S3_BUCKET = "musicsanad"               # Replace with your actual bucket name
 MUSIC_CATALOG_TABLE = "music"          # From MusicCreateTable_Task1_2
 SUBSCRIPTIONS_TABLE = "sMusicSubscriptions"  # Still used for user subscriptions
+
+# Lambda Endpoint Configuration
+LAMBDA_ENDPOINT = "https://dc4k2rn2l5.execute-api.us-east-1.amazonaws.com/Post/lambda_function"  # Lambda endpoint URL
 
 # Initialize AWS Clients
 dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
@@ -49,6 +53,31 @@ def login():
         return redirect(url_for('home'))
 
     return render_template("login.html")
+
+
+### Register ###
+@group15_music.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        user_name = request.form['username']
+        password = request.form['password']
+
+        # Check if the user already exists
+        response = user_table.get_item(Key={"user_name": user_name})
+        if response.get("Item"):
+            flash("User already exists", "error")
+            return redirect(url_for('register'))
+
+        # Insert the new user into DynamoDB
+        try:
+            user_table.put_item(Item={"user_name": user_name, "password": password})
+            flash("Registration successful", "success")
+            return redirect(url_for('login'))
+        except Exception as e:
+            flash(f"Error: {str(e)}", "error")
+            return redirect(url_for('register'))
+
+    return render_template("register.html")
 
 
 @group15_music.route('/logout')
@@ -198,6 +227,24 @@ def subscribe_music():
             }
         )
         return jsonify({"message": "Music subscribed successfully!"})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+### Example Lambda Call ###
+@group15_music.route('/call_lambda', methods=['POST'])
+def call_lambda():
+    data = request.get_json()
+
+    try:
+        # Make an HTTP request to the Lambda endpoint
+        response = requests.post(LAMBDA_ENDPOINT, json=data)
+
+        if response.status_code == 200:
+            return jsonify({"message": "Lambda function executed successfully", "response": response.json()})
+        else:
+            return jsonify({"error": f"Failed to call Lambda: {response.text}"}), 500
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
