@@ -5,7 +5,7 @@
     </CLASSES>
     <JAVADOC />
     <SOURCES>
-      <root url="file://$PROJECT_DIR$/infrastructure/java" />
+      <root url="file://$PROJECT_DIR$/infrastructure/src/main/java" />
     </SOURCES>
   </library>
 </component>
