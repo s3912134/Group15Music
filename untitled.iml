@@ -5,6 +5,7 @@
     <content url="file://$MODULE_DIR$" dumb="true">
       <excludeFolder url="file://$MODULE_DIR$/backend/app/static" />
       <excludeFolder url="file://$MODULE_DIR$/frontend/my-app" />
+      <excludeFolder url="file://$MODULE_DIR$/frontend/node_modules" />
     </content>
   </component>
 </module>
