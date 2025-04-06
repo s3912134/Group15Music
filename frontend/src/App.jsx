@@ -1,8 +1,17 @@
 import React from "react";
-import HomePage from "./pages/HomePage.jsx";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import AuthPage from "./HomePage"; // Your login/register component
+import Dashboard from "./Dashboard"; // Updated component
 
 function App() {
-  return <HomePage />;
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<AuthPage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App;
