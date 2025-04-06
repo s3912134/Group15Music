@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { LogOut } from "lucide-react";
+import Lottie from "lottie-react";
+import loadingAnimation from "./assets/loading_animation.json";
 import musicLogo from './assets/music_logo.svg';
 
 const musicEndpoint = "https://548gthscc2.execute-api.us-east-1.amazonaws.com/default/Lambda_Music";
@@ -7,6 +9,7 @@ const musicEndpoint = "https://548gthscc2.execute-api.us-east-1.amazonaws.com/de
 export default function Dashboard() {
   const [musicList, setMusicList] = useState([]);
   const [searchFields, setSearchFields] = useState({ title: "", artist: "", album: "", year: "" });
+  const [loading, setLoading] = useState(false);
   const username = localStorage.getItem("userName") || "Guest";
 
   useEffect(() => {
@@ -14,6 +17,7 @@ export default function Dashboard() {
   }, []);
 
   const fetchAllMusic = async () => {
+    setLoading(true);
     try {
       const response = await fetch(musicEndpoint, {
         method: "POST",
@@ -30,6 +34,8 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error("Error fetching music list:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -40,6 +46,7 @@ export default function Dashboard() {
 
   const handleSearch = async (e) => {
     e.preventDefault();
+    setLoading(true);
     const query = {
       action: "query_music",
       ...Object.fromEntries(Object.entries(searchFields).filter(([_, v]) => v))
@@ -58,6 +65,8 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error("Search error:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -119,7 +128,11 @@ export default function Dashboard() {
             <div className="md:w-1/2">
               <h2 className="text-sm text-gray-500 mb-4">Found {musicList.length} results</h2>
               <div className="space-y-3 h-[400px] overflow-y-scroll pr-2">
-                {musicList.length > 0 ? (
+                {loading ? (
+                  <div className="flex justify-center items-center h-full">
+                    <Lottie animationData={loadingAnimation} loop={true} style={{ height: 150, width: 150 }} />
+                  </div>
+                ) : musicList.length > 0 ? (
                   musicList.map((music, index) => (
                     <div key={index} className="flex items-center bg-gray-100 rounded-xl p-2 justify-between">
                       <div className="flex items-center space-x-3">
