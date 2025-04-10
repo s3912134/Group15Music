@@ -4,21 +4,29 @@ import Lottie from "lottie-react";
 import loadingAnimation from "./assets/loading_animation.json";
 import musicLogo from './assets/music_logo.svg';
 
+
 const musicEndpoint = "https://548gthscc2.execute-api.us-east-1.amazonaws.com/default/Lambda_Music";
+const subscriptionEndpoint = "https://wqvg0mm0h6.execute-api.us-east-1.amazonaws.com/default/subscriptions";
 
 export default function Dashboard() {
   const [musicList, setMusicList] = useState([]);
   const [searchFields, setSearchFields] = useState({ title: "", artist: "", album: "", year: "" });
   const [loading, setLoading] = useState(false);
   const username = localStorage.getItem("userName") || "Guest";
+  const [subscribedSongs, setSubscribedSongs] = useState([]);
+  const userEmail = localStorage.getItem("userEmail") || "guest@example.com";
 
   useEffect(() => {
     fetchAllMusic();
+    fetchSubscriptions();
   }, []);
 
   const fetchAllMusic = async () => {
     setLoading(true);
+    const userEmail = localStorage.getItem("userEmail");
+  
     try {
+      // 1. Fetch all music
       const response = await fetch(musicEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -26,18 +34,101 @@ export default function Dashboard() {
       });
       const data = await response.json();
       const parsed = typeof data.body === "string" ? JSON.parse(data.body) : data.body;
-
+  
+      // 2. Fetch subscriptions
+      const subsResponse = await fetch(subscriptionEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "get_subscriptions", user_email: userEmail })
+      });
+      const subsData = await subsResponse.json();
+      const subscriptions = subsData?.body?.subscriptions || [];
+  
+      const subscribedKeys = subscriptions.map(item => `${item.song_title}#${item.artist}`);
+  
+      // 3. Filter out already subscribed music
       if (parsed.status === "success" && Array.isArray(parsed.items)) {
-        setMusicList(parsed.items);
+        const filtered = parsed.items.filter(
+          m => !subscribedKeys.includes(`${m.title}#${m.artist}`)
+        );
+        setMusicList(filtered);
       } else {
         console.log("No music items found.", parsed);
       }
+  
     } catch (error) {
-      console.error("Error fetching music list:", error);
+      console.error("Error fetching music list or subscriptions:", error);
     } finally {
       setLoading(false);
     }
   };
+  
+
+  const fetchSubscriptions = async () => {
+    try {
+      const response = await fetch(subscriptionEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "get_subscriptions",
+          user_email: userEmail
+        })
+      });
+  
+      const data = await response.json();
+      const parsed = typeof data.body === "string" ? JSON.parse(data.body) : data.body;
+  
+      if (parsed.status === "success") {
+        setSubscribedSongs(parsed.subscriptions);
+      }
+    } catch (err) {
+      console.error("❌ Error fetching subscriptions:", err);
+    }
+  };
+
+  const handleSubscribe = async (music) => {
+    const userEmail = localStorage.getItem("userEmail");
+    const songKey = `${music.title}#${music.artist}`;
+    const alreadySubscribed = subscribedSongs.some(
+      (item) => `${item.song_title}#${item.artist}` === songKey
+    );
+  
+    if (alreadySubscribed) {
+      alert("You’ve already subscribed to this music.");
+      return;
+    }
+  
+    try {
+      const response = await fetch(subscriptionEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "subscribe",
+          user_email: userEmail,
+          song_title: music.title,
+          artist: music.artist,
+          album: music.album || "",
+          image_url: music.image_url || ""
+        })
+      });
+  
+      const result = await response.json();
+      const parsed = typeof result.body === "string" ? JSON.parse(result.body) : result;
+  
+      if (parsed.status === "success") {
+        alert("Subscribed successfully!");
+        fetchAllMusic();       // Refresh filtered list
+        fetchSubscriptions();  // Refresh left pane
+      } else {
+        alert(parsed.message || "Subscription failed.");
+      }
+    } catch (error) {
+      console.error("❌ Subscription error:", error);
+      alert("Subscription failed.");
+    }
+  };
+  
+  
 
   const handleSearchChange = (e) => {
     const { name, value } = e.target;
@@ -61,8 +152,12 @@ export default function Dashboard() {
       const parsed = typeof data.body === "string" ? JSON.parse(data.body) : data.body;
 
       if (parsed.status === "success" && Array.isArray(parsed.items)) {
-        setMusicList(parsed.items);
-      }
+        const subscribedKeys = subscribedSongs.map(item => `${item.song_title}#${item.artist}`);
+        const filtered = parsed.items.filter(
+          m => !subscribedKeys.includes(`${m.title}#${m.artist}`)
+        );
+        setMusicList(filtered);
+      }      
     } catch (error) {
       console.error("Search error:", error);
     } finally {
@@ -96,17 +191,17 @@ export default function Dashboard() {
           <h2 className="text-xl font-bold text-black mb-1">Subscribed Musics</h2>
           <p className="text-sm text-gray-500 mb-4">Your wish list</p>
           <div className="space-y-3">
-            {subscribedMusic.map((music, index) => (
-              <div key={index} className="flex items-center bg-gray-100 rounded-xl p-2 justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-15 h-15 bg-gray-300 rounded-md"></div>
-                  <div>
-                    <p className="font-semibold text-black leading-none mb-[5px]">{music.title}</p>
-                    <p className="text-sm text-gray-500 leading-none">{music.artist}</p>
-                  </div>
+          {subscribedSongs.map((music, index) => (
+            <div key={index} className="flex items-center bg-gray-100 rounded-xl p-2 justify-between">
+              <div className="flex items-center space-x-3">
+                <img src={music.image_url || "https://via.placeholder.com/40"} alt={music.title} className="w-12 h-12 rounded-md object-cover" />
+                <div>
+                  <p className="font-semibold text-black leading-none mb-[5px]">{music.song_title}</p>
+                  <p className="text-sm text-gray-500 leading-none">{music.artist}</p>
                 </div>
-                <button className="bg-black text-white p-2 rounded-full">🗑️</button>
               </div>
+              <button className="bg-black text-white p-2 rounded-full">🗑️</button>
+            </div>
             ))}
           </div>
         </div>
@@ -142,7 +237,7 @@ export default function Dashboard() {
                           <p className="text-sm text-gray-500 leading-none">{music.artist}</p>
                         </div>
                       </div>
-                      <button className="bg-black text-white p-2 rounded-full">➕</button>
+                      <button onClick={() => handleSubscribe(music)} className="bg-black text-white p-2 rounded-full hover:bg-gray-800 transition">➕</button>
                     </div>
                   ))
                 ) : (

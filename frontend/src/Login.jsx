@@ -1,13 +1,17 @@
 import React, { useState } from "react";
+import Lottie from "lottie-react";
+import loadingAnimation from "./assets/loading_animation.json";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [loading, setLoading] = useState(false); // 🔹 loading state
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); // 🔹 Start loading
 
     const endpoint =
       "https://dc4k2rn2l5.execute-api.us-east-1.amazonaws.com/Post/lambda_function";
@@ -27,8 +31,6 @@ export default function LoginPage() {
       const parsed = typeof data.body === "string" ? JSON.parse(data.body) : data;
 
       if (parsed.status === "success") {
-        alert(parsed.message || "Success");
-
         if (isLogin) {
           localStorage.setItem("userEmail", email);
           localStorage.setItem("userName", parsed.user_name || "");
@@ -40,6 +42,8 @@ export default function LoginPage() {
     } catch (error) {
       console.error("Error calling Lambda:", error);
       alert("An error occurred. Please try again.");
+    } finally {
+      setLoading(false); // 🔹 Stop loading
     }
   };
 
@@ -58,6 +62,7 @@ export default function LoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-5 py-3 border border-gray-300 rounded-lg text-black placeholder-gray-500"
               required
+              disabled={loading}
             />
           )}
           <input
@@ -67,6 +72,7 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-5 py-3 border border-gray-300 rounded-lg text-black placeholder-gray-500"
             required
+            disabled={loading}
           />
           <input
             type="password"
@@ -75,12 +81,22 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-5 py-3 border border-gray-300 rounded-lg text-black placeholder-gray-500"
             required
+            disabled={loading}
           />
+
           <button
             type="submit"
-            className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition"
+            className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition flex justify-center items-center"
+            disabled={loading}
           >
-            {isLogin ? "Login" : "Register"}
+            {loading ? (
+              <Lottie
+                animationData={loadingAnimation}
+                style={{ height: 30, width: 30 }}
+              />
+            ) : (
+              isLogin ? "Login" : "Register"
+            )}
           </button>
         </form>
         <p className="text-center mt-6 text-sm text-gray-600">
