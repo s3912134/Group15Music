@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { LogOut } from "lucide-react";
 import Lottie from "lottie-react";
 import loadingAnimation from "./assets/loading_animation.json";
-import musicLogo from './assets/music_logo.svg';
+import musicLogo from './assets/Music_logo.svg';
 
 
 const musicEndpoint = "https://548gthscc2.execute-api.us-east-1.amazonaws.com/default/Lambda_Music";
