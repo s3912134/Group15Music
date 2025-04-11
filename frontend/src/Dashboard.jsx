@@ -3,6 +3,9 @@ import { LogOut } from "lucide-react";
 import Lottie from "lottie-react";
 import loadingAnimation from "./assets/loading_animation.json";
 import musicLogo from './assets/Music_logo.svg';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 
 const musicEndpoint = "https://548gthscc2.execute-api.us-east-1.amazonaws.com/default/Lambda_Music";
@@ -15,12 +18,9 @@ export default function Dashboard() {
   const username = localStorage.getItem("userName") || "Guest";
   const [subscribedSongs, setSubscribedSongs] = useState([]);
   const userEmail = localStorage.getItem("userEmail") || "guest@example.com";
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => {
-    fetchAllMusic();
-    fetchSubscriptions();
-  }, []);
-
+  
   const fetchAllMusic = async () => {
     setLoading(true);
     const userEmail = localStorage.getItem("userEmail");
@@ -63,7 +63,6 @@ export default function Dashboard() {
     }
   };
   
-
   const fetchSubscriptions = async () => {
     try {
       const response = await fetch(subscriptionEndpoint, {
@@ -86,6 +85,19 @@ export default function Dashboard() {
     }
   };
 
+  useEffect(() => {
+    const userEmail = localStorage.getItem("userEmail");
+    if (!userEmail || userEmail === "guest@example.com") {
+      window.location.href = "/";
+      return;
+    }
+  
+    setIsAuthenticated(true);
+    fetchAllMusic();
+    fetchSubscriptions();
+  }, []);
+  
+  if (!isAuthenticated) return null;
   const handleSubscribe = async (music) => {
     const userEmail = localStorage.getItem("userEmail");
     const songKey = `${music.title}#${music.artist}`;
@@ -94,7 +106,7 @@ export default function Dashboard() {
     );
   
     if (alreadySubscribed) {
-      alert("You’ve already subscribed to this music.");
+      toast.success("You’ve already subscribed to this music.");
       return;
     }
   
@@ -116,10 +128,15 @@ export default function Dashboard() {
       const parsed = typeof result.body === "string" ? JSON.parse(result.body) : result;
   
       if (parsed.status === "success") {
-        alert("Subscribed successfully!");
-        fetchAllMusic();       // Refresh filtered list
-        fetchSubscriptions();  // Refresh left pane
-      } else {
+        toast.success("Subscribed successfully!");
+        
+        // ✅ First, fetch updated subscriptions
+        await fetchSubscriptions();
+      
+        // ✅ Then, re-fetch and filter the music list
+        await fetchAllMusic();
+      }
+       else {
         alert(parsed.message || "Subscription failed.");
       }
     } catch (error) {
@@ -128,6 +145,34 @@ export default function Dashboard() {
     }
   };
   
+  const handleUnsubscribe = async (music) => {
+    try {
+      const response = await fetch(subscriptionEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "unsubscribe",
+          user_email: userEmail,
+          song_title: music.song_title,
+          artist: music.artist
+        })
+      });
+  
+      const result = await response.json();
+      const parsed = typeof result.body === "string" ? JSON.parse(result.body) : result;
+  
+      if (parsed.status === "success") {
+        toast.success("Unsubscribed successfully!");
+        fetchAllMusic();       // Refresh right pane
+        fetchSubscriptions();  // Refresh left pane
+      } else {
+        alert(parsed.message || "Unsubscription failed.");
+      }
+    } catch (error) {
+      console.error("❌ Unsubscription error:", error);
+      alert("Failed to unsubscribe.");
+    }
+  };
   
 
   const handleSearchChange = (e) => {
@@ -200,7 +245,7 @@ export default function Dashboard() {
                   <p className="text-sm text-gray-500 leading-none">{music.artist}</p>
                 </div>
               </div>
-              <button className="bg-black text-white p-2 rounded-full">🗑️</button>
+              <button onClick={() => handleUnsubscribe(music)} className="bg-black text-white p-2 rounded-full hover:bg-red-700 transition">🗑️</button>
             </div>
             ))}
           </div>
@@ -237,7 +282,7 @@ export default function Dashboard() {
                           <p className="text-sm text-gray-500 leading-none">{music.artist}</p>
                         </div>
                       </div>
-                      <button onClick={() => handleSubscribe(music)} className="bg-black text-white p-2 rounded-full hover:bg-gray-800 transition">➕</button>
+                      <button onClick={() => handleSubscribe(music)} className="bg-black text-white p-2 rounded-full hover:bg-green-700 transition">➕</button>
                     </div>
                   ))
                 ) : (
@@ -248,6 +293,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 }

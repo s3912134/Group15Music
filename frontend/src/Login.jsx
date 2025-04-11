@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Lottie from "lottie-react";
 import loadingAnimation from "./assets/loading_animation.json";
 
@@ -9,6 +9,13 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false); // 🔹 loading state
 
+  useEffect(() => {
+    const userEmail = localStorage.getItem("userEmail");
+    if (userEmail) {
+      window.location.href = "/dashboard";
+    }
+  }, []);  
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true); // 🔹 Start loading
