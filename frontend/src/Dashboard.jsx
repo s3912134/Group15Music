@@ -99,19 +99,34 @@ export default function Dashboard() {
   
   if (!isAuthenticated) return null;
   const handleSubscribe = async (music) => {
-    const userEmail = localStorage.getItem("userEmail");
     const songKey = `${music.title}#${music.artist}`;
     const alreadySubscribed = subscribedSongs.some(
       (item) => `${item.song_title}#${item.artist}` === songKey
     );
   
     if (alreadySubscribed) {
-      toast.success("You’ve already subscribed to this music.");
+      toast.info("Already subscribed!");
       return;
     }
   
+    // 1. Update UI first (optimistic)
+    const updatedSubscriptions = [...subscribedSongs, {
+      song_title: music.title,
+      artist: music.artist,
+      album: music.album,
+      image_url: music.image_url,
+    }];
+    const updatedMusicList = musicList.filter(
+      (item) => `${item.title}#${item.artist}` !== songKey
+    );
+  
+    setSubscribedSongs(updatedSubscriptions);
+    setMusicList(updatedMusicList);
+    toast.success("Subscribed!");
+  
+    // 2. Send request in background
     try {
-      const response = await fetch(subscriptionEndpoint, {
+      await fetch(subscriptionEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -120,61 +135,52 @@ export default function Dashboard() {
           song_title: music.title,
           artist: music.artist,
           album: music.album || "",
-          image_url: music.image_url || ""
-        })
+          image_url: music.image_url || "",
+        }),
       });
-  
-      const result = await response.json();
-      const parsed = typeof result.body === "string" ? JSON.parse(result.body) : result;
-  
-      if (parsed.status === "success") {
-        toast.success("Subscribed successfully!");
-        
-        // ✅ First, fetch updated subscriptions
-        await fetchSubscriptions();
-      
-        // ✅ Then, re-fetch and filter the music list
-        await fetchAllMusic();
-      }
-       else {
-        alert(parsed.message || "Subscription failed.");
-      }
     } catch (error) {
-      console.error("❌ Subscription error:", error);
-      alert("Subscription failed.");
+      console.error("❌ Backend subscription error:", error);
     }
   };
   
   const handleUnsubscribe = async (music) => {
+    const songKey = `${music.song_title}#${music.artist}`;
+  
+    // 1. Update UI instantly
+    const updatedSubscriptions = subscribedSongs.filter(
+      (item) => `${item.song_title}#${item.artist}` !== songKey
+    );
+    const updatedMusicList = [
+      ...musicList,
+      {
+        title: music.song_title,
+        artist: music.artist,
+        album: music.album || "",
+        image_url: music.image_url || "",
+      },
+    ];
+  
+    setSubscribedSongs(updatedSubscriptions);
+    setMusicList(updatedMusicList);
+    toast.success("Unsubscribed!");
+  
+    // 2. Send request in background
     try {
-      const response = await fetch(subscriptionEndpoint, {
+      await fetch(subscriptionEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "unsubscribe",
           user_email: userEmail,
           song_title: music.song_title,
-          artist: music.artist
-        })
+          artist: music.artist,
+        }),
       });
-  
-      const result = await response.json();
-      const parsed = typeof result.body === "string" ? JSON.parse(result.body) : result;
-  
-      if (parsed.status === "success") {
-        toast.success("Unsubscribed successfully!");
-        fetchAllMusic();       // Refresh right pane
-        fetchSubscriptions();  // Refresh left pane
-      } else {
-        alert(parsed.message || "Unsubscription failed.");
-      }
     } catch (error) {
-      console.error("❌ Unsubscription error:", error);
-      alert("Failed to unsubscribe.");
+      console.error("❌ Backend unsubscribe error:", error);
     }
   };
   
-
   const handleSearchChange = (e) => {
     const { name, value } = e.target;
     setSearchFields(prev => ({ ...prev, [name]: value }));
@@ -215,11 +221,6 @@ export default function Dashboard() {
     window.location.href = "/";
   };
 
-  const subscribedMusic = [
-    { title: "Blank Space", artist: "Taylor Swift" },
-    { title: "Hello!", artist: "Adele" },
-    { title: "Baby", artist: "Justin Bieber" },
-  ];
 
   return (
     <div className="min-h-screen bg-gray-100 w-full px-[75px]">
@@ -235,11 +236,11 @@ export default function Dashboard() {
         <div className="bg-white p-7 rounded-2xl shadow">
           <h2 className="text-xl font-bold text-black mb-1">Subscribed Musics</h2>
           <p className="text-sm text-gray-500 mb-4">Your wish list</p>
-          <div className="space-y-3">
+          <div className="space-y-3 h-[370px] overflow-y-scroll pr-2">
           {subscribedSongs.map((music, index) => (
             <div key={index} className="flex items-center bg-gray-100 rounded-xl p-2 justify-between">
               <div className="flex items-center space-x-3">
-                <img src={music.image_url || "https://via.placeholder.com/40"} alt={music.title} className="w-12 h-12 rounded-md object-cover" />
+                <img src={music.image_url || "https://via.placeholder.com/40"} alt={music.title} className="w-16 h-16 rounded-md object-cover" />
                 <div>
                   <p className="font-semibold text-black leading-none mb-[5px]">{music.song_title}</p>
                   <p className="text-sm text-gray-500 leading-none">{music.artist}</p>
@@ -273,23 +274,47 @@ export default function Dashboard() {
                     <Lottie animationData={loadingAnimation} loop={true} style={{ height: 150, width: 150 }} />
                   </div>
                 ) : musicList.length > 0 ? (
-                  musicList.map((music, index) => (
-                    <div key={index} className="flex items-center bg-gray-100 rounded-xl p-2 justify-between">
-                      <div className="flex items-center space-x-3">
-                        <img src={music.image_url || "https://via.placeholder.com/40"} alt={music.title} className="w-16 h-16 rounded-md object-cover" />
-                        <div>
-                          <p className="font-semibold text-black leading-none mb-[5px]">{music.title}</p>
-                          <p className="text-sm text-gray-500 leading-none">{music.artist}</p>
+                  musicList.map((music, index) => {
+                    const isSubscribed = subscribedSongs.some(
+                      (item) => `${item.song_title}#${item.artist}` === `${music.title}#${music.artist}`
+                    );
+
+                    return (
+                      <div
+                        key={index}
+                        className={`flex items-center rounded-xl p-2 justify-between ${
+                          isSubscribed ? "bg-gray-200 opacity-60 cursor-not-allowed" : "bg-gray-100"
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <img
+                            src={music.image_url || "https://via.placeholder.com/40"}
+                            alt={music.title}
+                            className="w-16 h-16 rounded-md object-cover"
+                          />
+                          <div>
+                            <p className="font-semibold text-black leading-none mb-[5px]">{music.title}</p>
+                            <p className="text-sm text-gray-500 leading-none">{music.artist}</p>
+                          </div>
                         </div>
+                        <button
+                          onClick={() => !isSubscribed && handleSubscribe(music)}
+                          className={`text-white p-2 rounded-full transition ${
+                            isSubscribed ? "bg-gray-400" : "bg-black hover:bg-green-600"
+                          }`}
+                          disabled={isSubscribed}
+                        >
+                          {isSubscribed ? "✔️" : "➕"}
+                        </button>
                       </div>
-                      <button onClick={() => handleSubscribe(music)} className="bg-black text-white p-2 rounded-full hover:bg-green-700 transition">➕</button>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <p className="text-gray-400">No music found</p>
                 )}
               </div>
             </div>
+
           </div>
         </div>
       </div>
