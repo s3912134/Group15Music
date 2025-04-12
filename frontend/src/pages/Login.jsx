@@ -1,24 +1,26 @@
 import React, { useEffect, useState } from "react";
 import Lottie from "lottie-react";
-import loadingAnimation from "./assets/loading_animation.json";
+import loadingAnimation from "../assets/loading_animation.json";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
-  const [loading, setLoading] = useState(false); // 🔹 loading state
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const userEmail = localStorage.getItem("userEmail");
     if (userEmail) {
       window.location.href = "/dashboard";
     }
-  }, []);  
-  
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); // 🔹 Start loading
+    setLoading(true);
 
     const endpoint =
       "https://dc4k2rn2l5.execute-api.us-east-1.amazonaws.com/Post/lambda_function";
@@ -42,15 +44,20 @@ export default function LoginPage() {
           localStorage.setItem("userEmail", email);
           localStorage.setItem("userName", parsed.user_name || "");
           window.location.href = "/dashboard";
+        } else {
+          toast.success("✅ Successfully registered!");
+          setTimeout(() => {
+            setIsLogin(true);
+          }, 2000);
         }
       } else {
-        alert(parsed.message || "Something went wrong.");
+        toast.error(parsed.message || "Something went wrong.");
       }
     } catch (error) {
       console.error("Error calling Lambda:", error);
-      alert("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
     } finally {
-      setLoading(false); // 🔹 Stop loading
+      setLoading(false);
     }
   };
 
@@ -101,9 +108,7 @@ export default function LoginPage() {
                 animationData={loadingAnimation}
                 style={{ height: 30, width: 30 }}
               />
-            ) : (
-              isLogin ? "Login" : "Register"
-            )}
+            ) : isLogin ? "Login" : "Register"}
           </button>
         </form>
         <p className="text-center mt-6 text-sm text-gray-600">
@@ -116,6 +121,9 @@ export default function LoginPage() {
           </span>
         </p>
       </div>
+
+      {/* Toast Container */}
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 }
