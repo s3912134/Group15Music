@@ -21,17 +21,24 @@ export default function Dashboard() {
 
   useEffect(() => {
     const userEmail = localStorage.getItem("userEmail");
-  
-    if (!userEmail || userEmail === "guest@example.com") {
-      localStorage.clear(); // just in case cache brings stale values
+    if (!userEmail) {
+      // Clear everything and redirect
+      localStorage.clear();
       window.location.href = "/";
-      return;
+    } else {
+      setIsAuthenticated(true);
+      fetchSubscriptions();
+      fetchAllMusic();
     }
   
-    setIsAuthenticated(true);
-    fetchAllMusic();
-    fetchSubscriptions();
+    // Prevent browser from using cached version after logout
+    window.onpageshow = function (event) {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    };
   }, []);
+  
   
   const fetchAllMusic = async () => {
     setLoading(true);
@@ -196,9 +203,11 @@ export default function Dashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.clear();
-    window.location.href = "/";
+    localStorage.clear();              // Clear all session data
+    sessionStorage.clear();           // Just in case you used sessionStorage
+    window.location.href = "/";       // Redirect
   };
+  
 
   if (!isAuthenticated) return null;
 

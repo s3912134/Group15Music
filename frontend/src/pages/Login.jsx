@@ -13,10 +13,19 @@ export default function LoginPage() {
 
   useEffect(() => {
     const userEmail = localStorage.getItem("userEmail");
+  
     if (userEmail) {
       window.location.href = "/dashboard";
     }
+  
+    // 👇 Prevent going back to Dashboard after logout (forces fresh load)
+    window.onpageshow = function (event) {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    };
   }, []);
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
