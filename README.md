@@ -3,6 +3,11 @@
 A modern, full-stack music subscription web application built using **React**, **AWS Lambda**, **DynamoDB**, and **Vite**.
 
 ---
+## URL 
+
+http://ec2-13-219-124-174.compute-1.amazonaws.com/
+
+---
 
 ## 📁 Project Structure
 
