@@ -20,15 +20,19 @@ export default function Dashboard() {
   const userEmail = localStorage.getItem("userEmail") || "guest@example.com";
 
   useEffect(() => {
+    const userEmail = localStorage.getItem("userEmail");
+  
     if (!userEmail || userEmail === "guest@example.com") {
+      localStorage.clear(); // just in case cache brings stale values
       window.location.href = "/";
       return;
     }
+  
     setIsAuthenticated(true);
     fetchAllMusic();
     fetchSubscriptions();
   }, []);
-
+  
   const fetchAllMusic = async () => {
     setLoading(true);
     try {
