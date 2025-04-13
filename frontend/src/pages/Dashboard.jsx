@@ -93,6 +93,7 @@ export default function Dashboard() {
       song_title: music.title,
       artist: music.artist,
       album: music.album,
+      year: music.year,
       image_url: music.image_url,
     }];
     const updatedMusicList = musicList.filter(
@@ -112,6 +113,7 @@ export default function Dashboard() {
           user_email: userEmail,
           song_title: music.title,
           artist: music.artist,
+          year: music.year,
           album: music.album || "",
           image_url: music.image_url || "",
         })
@@ -129,6 +131,7 @@ export default function Dashboard() {
     const updatedMusicList = [...musicList, {
       title: music.song_title,
       artist: music.artist,
+      year: music.year,
       album: music.album || "",
       image_url: music.image_url || "",
     }];
@@ -145,7 +148,8 @@ export default function Dashboard() {
           action: "unsubscribe",
           user_email: userEmail,
           song_title: music.song_title,
-          artist: music.artist
+          artist: music.artist,
+          year: music.year,
         })
       });
     } catch (error) {
@@ -228,8 +232,8 @@ export default function Dashboard() {
                 <div className="flex items-center space-x-3">
                   <img src={music.image_url || "https://via.placeholder.com/40"} alt={music.title} className="w-16 h-16 rounded-md object-cover" />
                   <div>
-                    <p className="font-semibold text-black leading-none mb-[5px]">{music.song_title}</p>
-                    <p className="text-sm text-gray-500 leading-none">{music.artist}</p>
+                    <p className="font-semibold text-black leading-none mb-[5px]">{music.song_title} | {music.year}</p>
+                    <p className="text-sm text-gray-500 leading-none truncate max-w-[200px]">{music.artist} | {music.album} </p>
                   </div>
                 </div>
                 <button onClick={() => handleUnsubscribe(music)} className="bg-black text-white p-2 rounded-full hover:bg-red-700 transition">🗑️</button>
@@ -297,8 +301,8 @@ export default function Dashboard() {
                             className="w-16 h-16 rounded-md object-cover"
                           />
                           <div>
-                            <p className="font-semibold text-black leading-none mb-[5px]">{music.title}</p>
-                            <p className="text-sm text-gray-500 leading-none">{music.artist}</p>
+                            <p className="font-semibold text-black leading-none mb-[5px]">{music.title} | {music.year}</p>
+                            <p className="text-sm text-gray-500 leading-none truncate max-w-[250px]">{music.artist} | {music.album} </p>
                           </div>
                         </div>
                         <button
